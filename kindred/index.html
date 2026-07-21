@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindred — long-lost word cousins</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --page: #f9f9f7;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --inherited: #2a78d6;
+    --borrowed: #eb6834;
+    --other: #52514e;
+    --root: #898781;
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface: #262624;
+      --page: #1e1e1e;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --inherited: #3987e5;
+      --borrowed: #d95926;
+      --other: #c3c2b7;
+      --root: #898781;
+      --accent: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #262624;
+    --page: #1e1e1e;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --hairline: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --inherited: #3987e5;
+    --borrowed: #d95926;
+    --other: #c3c2b7;
+    --root: #898781;
+    --accent: #3987e5;
+  }
+
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .serif { font-family: "Iowan Old Style", "Palatino", Georgia, serif; }
+
+  header {
+    width: 100%;
+    max-width: 980px;
+    padding: 28px 24px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 18px;
+  }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .tagline { color: var(--ink-2); font-size: 14px; }
+
+  .controls {
+    width: 100%;
+    max-width: 980px;
+    padding: 10px 24px 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  #search {
+    flex: 1 1 220px;
+    max-width: 320px;
+    padding: 9px 14px;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+  button {
+    padding: 9px 18px;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .08s ease, border-color .15s ease;
+  }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  #cousin-list {
+    width: 100%;
+    max-width: 980px;
+    padding: 4px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 0;
+  }
+  .chip {
+    padding: 6px 13px;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+  .chip b { font-weight: 600; }
+
+  main {
+    width: 100%;
+    max-width: 980px;
+    padding: 8px 24px 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 12px 8px;
+    overflow: hidden;
+  }
+  #headline {
+    text-align: center;
+    padding: 6px 16px 0;
+    font-size: 17px;
+    color: var(--ink-2);
+    min-height: 26px;
+  }
+  #headline .serif { color: var(--ink); font-size: 19px; }
+  #narration {
+    text-align: center;
+    padding: 4px 16px 2px;
+    font-size: 14px;
+    color: var(--muted);
+    min-height: 22px;
+  }
+  svg { display: block; width: 100%; height: auto; }
+
+  .node-term {
+    font-family: "Iowan Old Style", "Palatino", Georgia, serif;
+    fill: var(--ink);
+  }
+  .node-term.recon { font-style: italic; }
+  .node-lang {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    fill: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .word-label { font-size: 26px; font-weight: 600; }
+  .anc-label { font-size: 21px; font-weight: 600; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 22px;
+    padding: 10px 16px 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend svg { width: 26px; height: 8px; }
+
+  footer {
+    width: 100%;
+    max-width: 980px;
+    padding: 10px 24px 28px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  footer a { color: var(--muted); }
+
+  #lang-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .lang-btn {
+    border: none;
+    border-radius: 0;
+    padding: 9px 12px;
+    font-size: 13px;
+    letter-spacing: .04em;
+    color: var(--muted);
+  }
+  .lang-btn.active { background: var(--accent); color: #fff; }
+
+  .linkish {
+    border: none;
+    background: none;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 9px 6px;
+  }
+  .linkish:hover { color: var(--ink); border: none; }
+
+  #about-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 20;
+  }
+  #about-overlay[hidden] { display: none; }
+  #about-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    max-width: 620px;
+    max-height: min(85vh, 100%);
+    overflow-y: auto;
+    padding: 28px 30px 22px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  #about-card h2 { color: var(--ink); font-size: 24px; margin-bottom: 10px; }
+  #about-card h3 {
+    color: var(--ink);
+    font-size: 13px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    margin: 18px 0 6px;
+  }
+  #about-card p { margin: 8px 0; }
+  #about-card b, #about-card i { color: var(--ink); }
+  #about-card a { color: var(--accent); }
+  #about-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 18px 14px 6px; }
+    .controls, #cousin-list { padding-left: 14px; padding-right: 14px; }
+    main { padding: 6px 10px 10px; }
+    .card { padding: 12px 4px 6px; border-radius: 12px; }
+    h1 { font-size: 24px; }
+    #headline { font-size: 15px; }
+    #headline .serif { font-size: 17px; }
+    #narration { font-size: 13px; }
+    .legend { gap: 6px 14px; font-size: 12px; padding: 8px 8px 10px; }
+    #about-card { padding: 22px 18px 16px; font-size: 14px; }
+  }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    max-width: 280px;
+    font-size: 13px;
+    color: var(--ink-2);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    opacity: 0;
+    transition: opacity .12s ease;
+    z-index: 10;
+  }
+  #tooltip.show { opacity: 1; }
+  #tooltip .tt-term { font-family: "Iowan Old Style", "Palatino", Georgia, serif; font-size: 15px; color: var(--ink); }
+  #tooltip .tt-lang { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .hit { cursor: help; }
+
+  .fade-in { animation: fadein .5s ease both; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes pop {
+    0% { opacity: 0; transform: scale(0.6); }
+    70% { transform: scale(1.08); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in, svg * { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kindred</h1>
+  <div class="tagline" id="tagline">Long-lost cousins of the English lexicon — each pair below descends from a single ancestor.</div>
+</header>
+
+<div class="controls">
+  <input id="search" type="search" placeholder="Search a word (e.g. shirt, cow, brother)…" list="wordlist" autocomplete="off">
+  <datalist id="wordlist"></datalist>
+  <button id="surprise" class="primary">Surprise me</button>
+  <button id="theme-toggle" title="Toggle light/dark">◐</button>
+  <span id="lang-toggle">
+    <button data-lang="en" class="lang-btn active">EN</button><button data-lang="es" class="lang-btn">ES</button>
+  </span>
+  <button id="about-link" class="linkish">About</button>
+</div>
+
+<div id="about-overlay" hidden>
+  <div id="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <button id="about-close" aria-label="Close">✕</button>
+    <h2 id="about-title" class="serif">About Kindred</h2>
+    <p>Language is a tangled network of traveling sound and meaning. Words
+    arrive through different trajectories. Some don't stray from home, passed
+    down from speaker to speaker for a thousand years. Others descend from the
+    same ancient family, wander through divergent lineages, and arrive back
+    changed beyond recognition. <b>Kindred is a tool for exploring long-lost
+    linguistic cousins</b>, known as <i>doublets</i> to linguists. In English
+    such surprising doublets include <i>cow &amp; beef</i>,
+    <i>guest &amp; host</i>, and <i>word &amp; verb</i>. Presently Kindred
+    supports English and Spanish.</p>
+
+    <h3>How to read a diagram</h3>
+    <p>The shared ancestor sits at the top, with each arc tracing one word's
+    descent. <span style="color:var(--inherited)">Solid blue</span> marks clean
+    native inheritance, handed straight down the family line.
+    <span style="color:var(--ink-2)">Grey</span> marks a looser descent:
+    older, across languages, or so reshaped that the exact mechanism is fuzzy
+    (often an ancient borrowing worn smooth by time).
+    <span style="color:var(--borrowed)">Dashed orange</span> marks a clear
+    borrowing, a word taken from another language. A dotted line marks a
+    connection made only at the level of a reconstructed root, real but less
+    direct. Forms marked with&nbsp;* are scholarly reconstructions, not attested
+    words. Hover any point for its meaning. A ⚠ note indicates an origin
+    Wiktionary itself records as uncertain.</p>
+
+    <h3>How it was made</h3>
+    <p>I've wanted to make a tool like this for years, but only found the time
+    thanks to the extraordinary abilities of LLM coding agents. I directed
+    Claude Code (Fable&nbsp;5) to search easily available sources, and together
+    we built Kindred over the course of a weekend. The core data come from the
+    crowdsourced etymologies of <a href="https://en.wiktionary.org">Wiktionary</a>,
+    extracted as a graph of 4.2 million relationships by
+    <a href="https://github.com/droher/etymology-db">etymology-db</a>. An offline
+    pipeline walks that graph for every common word, finds pairs whose ancestries
+    meet, reconstructs both descent chains, and scores each pair for
+    <i>surprise</i>. That surprise score is my own heuristic, rewarding how
+    familiar the two words are, how deep in time they parted, how differently
+    they traveled, and how far their forms and meanings have drifted. The
+    ingredients are public (word frequencies from the
+    <a href="https://github.com/rspeer/wordfreq">wordfreq</a> project, meanings
+    compared with <a href="https://wordnet.princeton.edu">WordNet</a>,
+    definitions from <a href="https://kaikki.org">kaikki.org</a>), but the recipe
+    that weighs them is just my own taste for what makes a doublet delightful.</p>
+  </div>
+</div>
+
+<div id="cousin-list"></div>
+
+<main>
+  <div class="card">
+    <div id="headline"></div>
+    <div id="narration"></div>
+    <div id="ancgloss" style="text-align:center;padding:2px 16px;font-size:14px;color:var(--ink-2);font-style:italic;min-height:20px"></div>
+    <svg id="viz" viewBox="0 0 960 600" role="img" aria-label="Etymology diagram: two word descent paths converging on a shared ancestor"></svg>
+    <div class="legend">
+      <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--inherited)" stroke-width="2.5" stroke-linecap="round"/></svg>inherited</span>
+      <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--borrowed)" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round"/></svg>borrowed</span>
+      <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--other)" stroke-width="2" stroke-linecap="round"/></svg>derived / formed</span>
+      <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--root)" stroke-width="2" stroke-dasharray="1.5 4.5" stroke-linecap="round"/></svg>shared root (less direct)</span>
+    </div>
+  </div>
+</main>
+
+<div id="tooltip"></div>
+
+<footer>
+  Data derived from <a href="https://en.wiktionary.org">Wiktionary</a> via
+  <a href="https://github.com/droher/etymology-db">etymology-db</a>, CC-BY-SA 3.0.
+  Reconstructed forms (marked *) are scholarly hypotheses, not attested words.
+</footer>
+
+<script>
+const SVGNS = "http://www.w3.org/2000/svg";
+const BORROW = new Set(["borrowed_from","learned_borrowing_from","semi_learned_borrowing_from",
+  "unadapted_borrowing_from","orthographic_borrowing_from","calque_of"]);
+
+const LANGS = {
+  en: {
+    pairs: "pairs.json", glosses: "glosses.json", name: "English",
+    tagline: "Long-lost cousins of the English lexicon — each pair below descends from a single ancestor.",
+    placeholder: "Search a word (e.g. shirt, cow, brother)…",
+    skip: new Set(["Middle English"]),
+  },
+  es: {
+    pairs: "pairs_es.json", glosses: "glosses_es.json", name: "Spanish",
+    tagline: "Long-lost cousins of the Spanish lexicon — primos perdidos del léxico español.",
+    placeholder: "Search a word (e.g. llave, fútbol, obispo)…",
+    skip: new Set(["Old Spanish"]),
+  },
+};
+let LC = localStorage.kindredLang in LANGS ? localStorage.kindredLang : "en";
+
+let PAIRS = [];
+let byWord = new Map();
+let GLOSSES = {};
+
+function gloss(lang, term) {
+  return GLOSSES[lang + "|" + term] || null;
+}
+
+const tooltip = () => document.getElementById("tooltip");
+function showTip(evt, lang, term, override) {
+  const g = override || gloss(lang, term);
+  const tt = tooltip();
+  tt.innerHTML = `<div class="tt-lang">${lang}</div><div class="tt-term">${term}</div>` +
+    (g ? `<div>${g}</div>` : `<div style="color:var(--muted)">no gloss recorded</div>`);
+  tt.classList.add("show");
+  moveTip(evt);
+}
+function moveTip(evt) {
+  const tt = tooltip();
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const r = tt.getBoundingClientRect();
+  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+  tt.style.left = x + "px";
+  tt.style.top = y + "px";
+}
+function hideTip() { tooltip().classList.remove("show"); }
+
+function hoverable(g, lang, term, override) {
+  g.classList.add("hit");
+  g.addEventListener("mouseenter", e => showTip(e, lang, term, override));
+  g.addEventListener("mousemove", moveTip);
+  g.addEventListener("mouseleave", hideTip);
+}
+
+function relStyle(rel) {
+  if (rel === "inherited_from") return { stroke: "var(--inherited)", dash: null, w: 2.5 };
+  if (BORROW.has(rel))          return { stroke: "var(--borrowed)",  dash: "7 5", w: 2.5 };
+  if (rel === "has_root")       return { stroke: "var(--root)",      dash: "2 6", w: 2 };
+  return { stroke: "var(--other)", dash: null, w: 2 };
+}
+
+function el(name, attrs, parent) {
+  const e = document.createElementNS(SVGNS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// Sample points along an invisible guide bezier so nodes sit on a smooth
+// curve. Intermediate node boundaries are squashed into the lower 85% of the
+// arc so no node (or its label) crowds the ancestor at the apex.
+function guidePoints(x0, y0, x1, y1, cx, cy, n, samples) {
+  const p = el("path", { d: `M ${x0} ${y0} Q ${cx} ${cy} ${x1} ${y1}` }, document.getElementById("viz"));
+  const L = p.getTotalLength();
+  const bound = i => L * (i === n ? 1 : 0.85 * i / n);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const b0 = bound(i), b1 = bound(i + 1);
+    for (let j = 0; j < samples; j++) pts.push(p.getPointAtLength(b0 + ((b1 - b0) * j) / samples));
+  }
+  pts.push(p.getPointAtLength(L));
+  p.remove();
+  return pts;
+}
+
+// Two diagram geometries: wide arch on desktop, taller/narrower on phones so
+// the labels stay legible when the SVG scales to the screen.
+function geo() {
+  return innerWidth < 640
+    ? { vb: "0 0 540 780", cx: 270, wdx: 178, wy: 650, adx: 12, ay: 140,
+        ctrl: 300, ancY: 128, ancT: 96, ancL: 114, inward: true }
+    : { vb: "0 0 960 600", cx: 480, wdx: 300, wy: 508, adx: 14, ay: 108,
+        ctrl: 210, ancY: 96, ancT: 66, ancL: 84, inward: false };
+}
+let G = geo();
+
+function drawSide(svg, word, zipf, chain, sideSign, delayBase, wordGloss) {
+  // chain: [{lang,term,rel}...], last element is the shared ancestor (drawn separately)
+  const steps = chain.slice(0, -1);
+  const n = steps.length + 1; // segments: word -> ... -> ancestor
+  const x0 = G.cx + sideSign * G.wdx, y0 = G.wy;
+  const x1 = G.cx + sideSign * G.adx, y1 = G.ay;
+  const cx = G.cx + sideSign * G.wdx, cy = G.ctrl;
+  const SAMPLES = 24;
+  const guide = guidePoints(x0, y0, x1, y1, cx, cy, n, SAMPLES);
+
+  // segments, each styled by the relation of the node it leads to
+  const rels = chain.map(s => s.rel);
+  for (let i = 0; i < n; i++) {
+    const segPts = guide.slice(i * SAMPLES, (i + 1) * SAMPLES + 1);
+    const d = "M " + segPts.map(p => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ");
+    const st = relStyle(rels[i]);
+    const seg = el("path", { d, fill: "none", stroke: st.stroke, "stroke-width": st.w,
+      "stroke-linecap": "round" }, svg);
+    if (st.dash) seg.setAttribute("stroke-dasharray", st.dash);
+    const L = seg.getTotalLength();
+    // draw upward: dash animation over the segment, staggered
+    if (st.dash) {
+      seg.style.opacity = "0";
+      seg.style.animation = `fadein .45s ease ${(delayBase + i * 0.28)}s both`;
+    } else {
+      seg.setAttribute("stroke-dasharray", L);
+      seg.setAttribute("stroke-dashoffset", sideSign < 0 ? L : -L);
+      seg.style.animation = `draw .4s ease ${(delayBase + i * 0.28)}s both`;
+    }
+  }
+
+  // modern word label
+  const g0 = el("g", {}, svg);
+  g0.classList.add("fade-in");
+  g0.style.animationDelay = `${delayBase}s`;
+  hoverable(g0, LANGS[LC].name, word, wordGloss);
+  el("circle", { cx: x0, cy: y0, r: 16, fill: "transparent" }, g0);
+  el("circle", { cx: x0, cy: y0, r: 5, fill: "var(--ink)" }, g0);
+  const wl = el("text", { x: x0, y: y0 + 36, "text-anchor": "middle" }, g0);
+  wl.classList.add("node-term", "word-label");
+  wl.textContent = word;
+  const zl = el("text", { x: x0, y: y0 + 54, "text-anchor": "middle" }, g0);
+  zl.classList.add("node-lang");
+  zl.textContent = LANGS[LC].name;
+
+  // intermediate nodes — labels sit along the arc's outward (upper) normal,
+  // so lettering is always over the curve, never crossed by it
+  steps.forEach((s, i) => {
+    const idx = (i + 1) * SAMPLES;
+    const p = guide[idx];
+    const q0 = guide[Math.max(0, idx - 2)], q1 = guide[Math.min(guide.length - 1, idx + 2)];
+    let tx = q1.x - q0.x, ty = q1.y - q0.y;
+    const len = Math.hypot(tx, ty) || 1;
+    let nx = -ty / len, ny = tx / len;
+    // pick the normal pointing away from the arch interior: outward on the
+    // flanks, upward at the apex — labels never get crossed by the curve.
+    // Very near the apex that would collide with the ancestor's label, so
+    // flip inside the dome (which is empty) instead.
+    const ox = p.x - G.cx, oy = p.y - (G.wy + 32);
+    if (nx * ox + ny * oy < 0) { nx = -nx; ny = -ny; }
+    let off = 30;
+    // on phones the arcs hug the screen edges, so flank labels go INSIDE the
+    // arch (open space there) instead of clipping at the viewBox edge
+    if (G.inward && Math.abs(ny) < 0.8) {
+      nx = -sideSign;
+      ny = 0;
+      off = 16;
+    }
+    const g = el("g", {}, svg);
+    g.classList.add("fade-in");
+    g.style.animationDelay = `${delayBase + (i + 1) * 0.28}s`;
+    hoverable(g, s.lang, s.term);
+    el("circle", { cx: p.x, cy: p.y, r: 14, fill: "transparent" }, g);
+    el("circle", { cx: p.x, cy: p.y, r: 4, fill: relStyle(s.rel).stroke }, g);
+    // one label block (term over language, stacked as always), placed a fixed
+    // distance out along the normal so it clears the curve in any direction
+    const anchor = nx < -0.35 ? "end" : nx > 0.35 ? "start" : "middle";
+    const bx = p.x + nx * off, by = p.y + ny * off;
+    const t = el("text", { x: bx, y: by - 2, "text-anchor": anchor, "font-size": 16 }, g);
+    t.classList.add("node-term");
+    if (s.term.startsWith("*")) t.classList.add("recon");
+    t.textContent = s.term;
+    const l = el("text", { x: bx, y: by + 13, "text-anchor": anchor }, g);
+    l.classList.add("node-lang");
+    l.textContent = s.lang;
+  });
+  return delayBase + n * 0.28;
+}
+
+function narrate(p) {
+  const ancLang = p.ancestor.lang.replace("Proto-Indo-European", "PIE");
+  if (p.chain_a.length <= 1 && p.chain_b.length <= 1)
+    return `both were taken directly from ${ancLang} <i>${p.ancestor.term}</i> — twin forms of a single borrowing`;
+  const side = (word, chain) => {
+    // intermediate stops, oldest-first, without the ancestor itself
+    const steps = chain.slice(0, -1);
+    const langs = [];
+    for (const s of steps) {
+      const l = s.lang.replace("Proto-Indo-European", "PIE");
+      if (!LANGS[LC].skip.has(l) && !langs.includes(l)) langs.push(l);
+    }
+    const route = langs.reverse().slice(0, 3).join(" → ");
+    const borrowed = chain.some(s => BORROW.has(s.rel));
+    const inheritedOnly = steps.length && steps.every(s => s.rel === "inherited_from");
+    if (!chain.length && word === p.ancestor.term.toLowerCase())
+      return `<b>${word}</b> is where the story starts`;
+    if (!steps.length)
+      return `<b>${word}</b> traces straight back to ${ancLang} <i>${p.ancestor.term}</i>`;
+    if (inheritedOnly)
+      return `<b>${word}</b> was passed down natively${route ? `, via ${route}` : ""}`;
+    if (borrowed)
+      return `<b>${word}</b> was borrowed in${route ? `, via ${route}` : ` from ${ancLang}`}`;
+    return `<b>${word}</b> came by way of ${route || ancLang}`;
+  };
+  return `${side(p.a, p.chain_a)} · ${side(p.b, p.chain_b)}`;
+}
+
+let CURRENT = null;
+
+function render(p) {
+  CURRENT = p;
+  G = geo();
+  const svg = document.getElementById("viz");
+  svg.setAttribute("viewBox", G.vb);
+  svg.innerHTML = "";
+  const anc = p.ancestor;
+
+  // "descends from X itself" only when X really is the ancestor borrowed
+  // whole — i.e. that side's chain has no intermediate stops
+  const direct = (word, chain) => anc.term.toLowerCase() === word && chain.length <= 1;
+  const selfAnc = direct(p.a, p.chain_a) ? p.a : direct(p.b, p.chain_b) ? p.b : null;
+  const otherWord = selfAnc === p.a ? p.b : p.a;
+  document.getElementById("headline").innerHTML = selfAnc
+    ? `<span class="serif"><b>${otherWord}</b></span> descends from <span class="serif"><b>${selfAnc}</b></span> itself` +
+      ` <span style="color:var(--muted)">${anc.lang === "English"
+          ? "(it left English, traveled, and came back changed)"
+          : `(the ${anc.lang} word, borrowed whole)`}</span>`
+    : `<span class="serif"><b>${p.a}</b></span> &amp; <span class="serif"><b>${p.b}</b></span>` +
+      (anc.via_root
+        ? ` — grown from the same root, <span class="serif">${anc.term}</span>`
+        : ` — parted ways at <span class="serif">${anc.term}</span>`);
+  document.getElementById("narration").innerHTML = narrate(p);
+  const ag = gloss(anc.lang, anc.term);
+  const unc = (p.unc_a ? [p.a] : []).concat(p.unc_b ? [p.b] : []);
+  document.getElementById("ancgloss").innerHTML =
+    (ag ? `${anc.term} — “${ag}”` : "") +
+    (unc.length
+      ? `<div style="font-style:normal;font-size:12.5px;color:var(--muted);padding-top:2px">⚠ Wiktionary marks the story of <i>${unc.join("</i> and <i>")}</i> as partly uncertain</div>`
+      : "");
+
+  const dA = drawSide(svg, p.a, p.zipf_a, p.chain_a, -1, 0.15, p.gloss_a);
+  const dB = drawSide(svg, p.b, p.zipf_b, p.chain_b, +1, 0.15, p.gloss_b);
+
+  // ancestor node, appears after both paths arrive
+  const delay = Math.max(dA, dB) + 0.1;
+  const g = el("g", {}, svg);
+  g.style.animation = `pop .5s ease ${delay}s both`;
+  g.style.transformOrigin = `${G.cx}px ${G.ancY}px`;
+  hoverable(g, anc.lang, anc.term);
+  el("circle", { cx: G.cx, cy: G.ancY, r: 18, fill: "transparent" }, g);
+  el("circle", { cx: G.cx, cy: G.ancY, r: 7, fill: "none", stroke: "var(--ink)", "stroke-width": 2.5 }, g);
+  const t = el("text", { x: G.cx, y: G.ancT, "text-anchor": "middle" }, g);
+  t.classList.add("node-term", "anc-label");
+  if (anc.term.startsWith("*")) t.classList.add("recon");
+  t.textContent = anc.term;
+  const l = el("text", { x: G.cx, y: G.ancL, "text-anchor": "middle" }, g);
+  l.classList.add("node-lang");
+  l.textContent = anc.lang;
+
+  location.hash = encodeURIComponent(`${p.a}+${p.b}`);
+}
+
+// "Surprise me" deals from a shuffled deck built with diversity rules: no
+// repeats until the deck is seen, familiar words only, each word appears
+// once, and each ancestor at most once (so one prolific PIE root can't
+// flood the rotation).
+// Profanity guard: keep vulgar words from surfacing as headline pairs or
+// chips on a public/professional site. Edit or empty this set to adjust.
+const BLOCK = new Set(["dick","fuck","cock","shit","shite","piss","tit","tits",
+  "ass","arse","cunt","bugger","wank","twat","bollocks","prick","turd","fart",
+  "crap","slut","whore","boob","boobs","bitch","damn","hell"]);
+const clean = p => !BLOCK.has(p.a) && !BLOCK.has(p.b);
+
+let deck = [];
+function weightedRandom() {
+  if (!deck.length) {
+    const usedWord = new Set(), usedAnc = new Set();
+    for (let i = 0; i < PAIRS.length && deck.length < 250; i++) {
+      const p = PAIRS[i];
+      if (Math.min(p.zipf_a, p.zipf_b) < 3.4) continue;
+      if (!clean(p)) continue;
+      if (usedWord.has(p.a) || usedWord.has(p.b)) continue;
+      const k = p.ancestor.lang + "|" + p.ancestor.term;
+      if (usedAnc.has(k)) continue;
+      usedWord.add(p.a).add(p.b);
+      usedAnc.add(k);
+      deck.push(i);
+    }
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+  }
+  return PAIRS[deck.pop()];
+}
+
+function showCousins(word) {
+  const list = document.getElementById("cousin-list");
+  list.innerHTML = "";
+  const w = word.toLowerCase().trim();
+  // in global score order (hits[0] is the most surprising); drop vulgar cousins
+  const hits = (byWord.get(w) || []).filter(clean);
+  hits.forEach(p => {
+    const other = p.a === w ? p.b : p.a;
+    const btn = document.createElement("button");
+    btn.className = "chip";
+    btn.innerHTML = `<b>${other}</b> <span style="color:var(--muted)">· ${p.ancestor.lang.replace("Proto-Indo-European","PIE")}</span>`;
+    btn.onclick = () => render(p);
+    list.appendChild(btn);
+  });
+  // jump the diagram straight to this word's strongest pair
+  if (hits.length) render(hits[0]);
+  if (!hits.length && word) {
+    const d = document.createElement("span");
+    d.className = "chip";
+    d.style.color = "var(--muted)";
+    d.textContent = `no recorded cousins for “${word}”`;
+    list.appendChild(d);
+  }
+}
+
+async function loadLanguage(lc, opener) {
+  LC = lc;
+  localStorage.kindredLang = lc;
+  const L = LANGS[lc];
+  const data = await (await fetch(L.pairs)).json();
+  PAIRS = data.pairs;
+  try { GLOSSES = await (await fetch(L.glosses)).json(); } catch (e) { GLOSSES = {}; }
+  byWord = new Map();
+  for (const p of PAIRS) {
+    for (const w of [p.a, p.b]) {
+      if (!byWord.has(w)) byWord.set(w, []);
+      byWord.get(w).push(p);
+    }
+  }
+  const dl = document.getElementById("wordlist");
+  dl.innerHTML = "";
+  [...byWord.keys()].sort().forEach(w => {
+    const o = document.createElement("option");
+    o.value = w;
+    dl.appendChild(o);
+  });
+  deck = [];
+  document.getElementById("tagline").textContent = L.tagline;
+  document.getElementById("search").placeholder = L.placeholder;
+  document.getElementById("search").value = "";
+  document.getElementById("cousin-list").innerHTML = "";
+  document.querySelectorAll(".lang-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === lc));
+  render(opener || weightedRandom());
+}
+
+async function init() {
+  document.querySelectorAll(".lang-btn").forEach(b => {
+    b.onclick = () => { if (b.dataset.lang !== LC) loadLanguage(b.dataset.lang); };
+  });
+
+  document.getElementById("surprise").onclick = () => {
+    document.getElementById("cousin-list").innerHTML = "";
+    render(weightedRandom());
+  };
+  document.getElementById("search").addEventListener("change", e => showCousins(e.target.value));
+  document.getElementById("theme-toggle").onclick = () => {
+    const r = document.documentElement;
+    const dark = getComputedStyle(document.body).colorScheme === "dark";
+    r.dataset.theme = dark ? "light" : "dark";
+  };
+  document.addEventListener("keydown", e => {
+    if (e.key === " " && document.activeElement.tagName !== "INPUT") {
+      e.preventDefault();
+      render(weightedRandom());
+    }
+    if (e.key === "Escape") document.getElementById("about-overlay").hidden = true;
+  });
+
+  // about overlay
+  const overlay = document.getElementById("about-overlay");
+  document.getElementById("about-link").onclick = () => { overlay.hidden = false; };
+  document.getElementById("about-close").onclick = () => { overlay.hidden = true; };
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.hidden = true; });
+
+  // redraw with the other geometry when crossing the mobile breakpoint
+  let rT;
+  window.addEventListener("resize", () => {
+    clearTimeout(rT);
+    rT = setTimeout(() => {
+      if (CURRENT && geo().vb !== G.vb) render(CURRENT);
+    }, 150);
+  });
+
+  // deep link or a strong opener
+  const h = decodeURIComponent(location.hash.slice(1));
+  const [ha, hb] = h.split("+");
+  await loadLanguage(LC);
+  const linked = PAIRS.find(p => p.a === ha && p.b === hb);
+  if (linked) render(linked);
+}
+init();
+</script>
+</body>
+</html>
